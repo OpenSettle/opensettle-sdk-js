@@ -1,7 +1,7 @@
 # @opensettle/sdk
 
 Official Node SDK for the [OpenSettle](https://opensettle.io) API. Stablecoin
-billing on Base, Ethereum, Polygon, Arbitrum, Solana, and Tron.
+billing on Base, Ethereum, Polygon, and Arbitrum.
 
 [![npm](https://img.shields.io/npm/v/@opensettle/sdk.svg)](https://www.npmjs.com/package/@opensettle/sdk)
 ![types](https://img.shields.io/badge/types-included-blue)
@@ -41,16 +41,17 @@ const customer = await os.customers.create({
   name: "Ada Lovelace",
 });
 
-// Bill them with a one-shot invoice paid in USDC on Base
+// Bill them with a one-shot invoice paid in USDC on Base.
+// Total is derived from `lineItems[].unitAmountMinor * quantity` —
+// there is no top-level `amountMinor`. `currency` defaults to "USD".
 const invoice = await os.invoices.create({
   customerId: customer.id,
-  amountMinor: 19_900,                         // $199.00 — minor units (cents)
-  currency: "USD",
   chain: "base",
   token: "USDC",
   lineItems: [
-    { description: "Pro plan", quantity: 1, unitAmountMinor: 19_900 },
+    { description: "Pro plan", quantity: 1, unitAmountMinor: 19_900 }, // $199.00 — minor units (cents)
   ],
+  dueInDays: 14,                               // optional, default 14
 });
 
 await os.invoices.send(invoice.id);            // emails the customer the link
@@ -189,7 +190,7 @@ Default tolerance is 5 minutes; pass `tolerance: <seconds>` to override (or
 - `os.products` — `list`, `retrieve`, `create`, `update`, `listPrices`, `createPrice`, `archivePrice`
 - `os.invoices` — `list`, `retrieve`, `create`, `send`, `remind`, `void`
 - `os.checkouts` — `create`, `retrieve`
-- `os.subscriptions` — `list`, `retrieve`, `create`, `pause`, `resume`, `cancel`, `changePlan`, `forceRenew`
+- `os.subscriptions` — `list`, `retrieve`, `create`, `pause`, `resume`, `cancel`, `changePlan`
 - `os.payments` — `list`, `retrieve`, `refund`, `refundBroadcast`
 - `os.webhookEndpoints` — `list`, `retrieve`, `create`, `update`, `del`, `rotateSecret`, `test`
 
