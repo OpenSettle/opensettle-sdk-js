@@ -187,7 +187,7 @@ Default tolerance is 5 minutes; pass `tolerance: <seconds>` to override (or
 ## Resources
 
 - `os.customers` — `list`, `retrieve`, `create`, `update`, `del`
-- `os.products` — `list`, `retrieve`, `create`, `update`, `listPrices`, `createPrice`, `archivePrice`
+- `os.products` — `list`, `retrieve`, `create`, `update`, `delete`, `listPrices`, `createPrice`, `deletePrice`
 - `os.invoices` — `list`, `retrieve`, `create`, `send`, `remind`, `void`
 - `os.checkouts` — `create`, `retrieve`
 - `os.subscriptions` — `list`, `retrieve`, `create`, `pause`, `resume`, `cancel`, `changePlan`
