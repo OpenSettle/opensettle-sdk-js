@@ -1,0 +1,70 @@
+{
+  "name": "@opensettle/sdk",
+  "version": "0.2.1",
+  "description": "Official Node SDK for the OpenSettle API. Stablecoin billing on Base, Ethereum, Polygon, Arbitrum, Solana, and Tron.",
+  "license": "MIT",
+  "homepage": "https://opensettle.io",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OpenSettle/opensettle-sdk-js.git"
+  },
+  "bugs": "https://github.com/OpenSettle/opensettle-sdk-js/issues",
+  "keywords": [
+    "opensettle",
+    "stablecoin",
+    "billing",
+    "subscriptions",
+    "usdc",
+    "usdt",
+    "evm",
+    "solana",
+    "tron",
+    "non-custodial"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./webhooks": {
+      "types": "./dist/webhooks.d.ts",
+      "import": "./dist/webhooks.js",
+      "require": "./dist/webhooks.cjs"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.js",
+      "require": "./dist/errors.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "echo 'sdk lint noop' && exit 0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@opensettle/shared": "workspace:*",
+    "@types/node": "^22.13.4",
+    "tsup": "^8.5.1",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.9"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
