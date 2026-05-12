@@ -5,6 +5,19 @@ All notable changes to `@opensettle/sdk` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-05-12
+
+### Added
+
+- **Pagination iterator** — `paginate(os.customers.list.bind(os.customers))`
+  yields every item across all pages via an `AsyncGenerator`. Pass a
+  second argument with filters; the cursor is threaded through every
+  call automatically.
+- **Polling helper** — `waitFor((id) => os.payments.retrieve(id),
+  "pay_…", (p) => p.status === "confirmed", { timeoutMs, intervalMs })`.
+  Throws `WaitTimeoutError` on timeout with `.last` set to the
+  last-observed resource.
+
 ## [0.3.0] — 2026-05-12
 
 **Breaking** — discovered via live smoke against `api.opensettle.io`:
