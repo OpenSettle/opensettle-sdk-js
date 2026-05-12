@@ -5,6 +5,39 @@ All notable changes to `@opensettle/sdk` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-05-12
+
+**Breaking** — discovered via live smoke against `api.opensettle.io`:
+prior versions did not unwrap the API's singleton response envelopes
+and had two incorrect type/field shapes.
+
+### Fixed
+
+- **Singleton response envelope unwrapping.** The API returns
+  `{customer: {…}}`, `{product: {…}}`, etc. for non-list responses.
+  Resource methods now return the unwrapped resource so
+  `await os.customers.create(…)` resolves to the `Customer` (its `.id`
+  works), not `{customer: Customer}`. Multi-key envelopes
+  (`refund` returns `{payment, unsignedTx}`; webhook create/rotate
+  returns `{endpoint, signingSecret}`) pass through unchanged.
+- **`payments.refundBroadcast` body field** changed from `txHash` to
+  `refundTxHash` to match `RecordRefundBroadcastRequest` in
+  `@opensettle/shared`. The prior shape was rejected by the API.
+- **`webhookEndpoints.rotateSecret` return type** changed from
+  `{secret, rotationGraceUntil}` to `CreateWebhookEndpointResponse`
+  (`{endpoint, signingSecret}`) to match what the API actually returns.
+
+### Migration
+
+Search-and-replace fixups for 0.2.x callers:
+
+- `result.customer.id` → `result.id` (and similar for product,
+  invoice, payment, subscription, checkout, endpoint)
+- `payments.refundBroadcast(id, { txHash })` →
+  `payments.refundBroadcast(id, { refundTxHash })`
+- `rotateSecret(id)` callers using `result.secret` → use
+  `result.signingSecret`; the result now also includes `result.endpoint`
+
 ## [0.2.1] — 2026-05-12
 
 ### Fixed
