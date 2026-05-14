@@ -1,6 +1,6 @@
 /**
  * Typed error hierarchy for OpenSettle SDK. Mirrors the API's stable
- * `error.code` taxonomy from `@opensettle/shared/errors` (12 codes).
+ * `error.code` taxonomy from `@opensettle/shared/errors`.
  *
  * Catchers can either:
  *   - check `err instanceof OpenSettleError` for the broad case, then
@@ -10,7 +10,8 @@
  *
  * The base class always carries `requestId` so users can quote it in
  * support — this is the same `request_id` the API echoes back in every
- * error envelope.
+ * error envelope. Per-code context (e.g. the jurisdiction reason for
+ * `restricted_jurisdiction`) is exposed via `metadata`.
  */
 
 export type ErrorCode =
@@ -26,6 +27,7 @@ export type ErrorCode =
   | "insufficient_confirmations"
   | "signing_required"
   | "aal_required"
+  | "restricted_jurisdiction"
   | "network_error";
 
 export class OpenSettleError extends Error {
@@ -34,6 +36,12 @@ export class OpenSettleError extends Error {
   readonly status: number;
   readonly requestId: string | null;
   readonly param: string | null;
+  /**
+   * Free-form per-code metadata. Currently populated by
+   * `restricted_jurisdiction` to carry `{ code, name, reason }`. Optional
+   * — older API responses (and most error codes) leave it `null`.
+   */
+  readonly metadata: Record<string, unknown> | null;
 
   constructor(opts: {
     code: ErrorCode;
@@ -41,12 +49,14 @@ export class OpenSettleError extends Error {
     status: number;
     requestId?: string | null;
     param?: string | null;
+    metadata?: Record<string, unknown> | null;
   }) {
     super(opts.message);
     this.code = opts.code;
     this.status = opts.status;
     this.requestId = opts.requestId ?? null;
     this.param = opts.param ?? null;
+    this.metadata = opts.metadata ?? null;
   }
 }
 
@@ -60,7 +70,19 @@ export class AuthenticationError extends OpenSettleError {
   override readonly name = "AuthenticationError";
 }
 export class ForbiddenError extends OpenSettleError {
-  override readonly name = "ForbiddenError";
+  // String-typed (not narrowed to the literal) so subclasses can override
+  // with their own name without TS subtype-compat errors.
+  override readonly name: string = "ForbiddenError";
+}
+/**
+ * Refusal because the merchant's declared country / US-state is on the
+ * restricted-jurisdictions list. HTTP 403; specific subclass of
+ * `ForbiddenError` so generic forbidden handlers still catch it. The
+ * envelope's `metadata` field carries `{ code, name, reason }` for the
+ * dashboard refusal page.
+ */
+export class RestrictedJurisdictionError extends ForbiddenError {
+  override readonly name: string = "RestrictedJurisdictionError";
 }
 export class NotFoundError extends OpenSettleError {
   override readonly name = "NotFoundError";
@@ -79,6 +101,7 @@ export class RateLimitError extends OpenSettleError {
     status: number;
     requestId?: string | null;
     param?: string | null;
+    metadata?: Record<string, unknown> | null;
     retryAfter?: number | null;
   }) {
     super({ ...opts, code: "rate_limited" });
@@ -105,7 +128,15 @@ export class NetworkError extends OpenSettleError {
  * don't want a new server-side code to crash older SDKs.
  */
 export function fromEnvelope(
-  envelope: { error?: { code?: string; message?: string; param?: string; request_id?: string } } | null,
+  envelope: {
+    error?: {
+      code?: string;
+      message?: string;
+      param?: string;
+      request_id?: string;
+      metadata?: Record<string, unknown>;
+    };
+  } | null,
   status: number,
   retryAfter: number | null,
 ): OpenSettleError {
@@ -114,7 +145,8 @@ export function fromEnvelope(
   const message = e?.message ?? `Request failed with status ${status}`;
   const requestId = e?.request_id ?? null;
   const param = e?.param ?? null;
-  const opts = { message, status, requestId, param };
+  const metadata = e?.metadata ?? null;
+  const opts = { message, status, requestId, param, metadata };
 
   switch (code) {
     case "invalid_request":
@@ -125,6 +157,8 @@ export function fromEnvelope(
       return new AuthenticationError({ ...opts, code });
     case "forbidden":
       return new ForbiddenError({ ...opts, code });
+    case "restricted_jurisdiction":
+      return new RestrictedJurisdictionError({ ...opts, code });
     case "not_found":
       return new NotFoundError({ ...opts, code });
     case "conflict":

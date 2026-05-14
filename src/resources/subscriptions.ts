@@ -1,4 +1,5 @@
-import type { HttpClient } from "../http.js";
+import { unwrap, type HttpClient } from "../http.js";
+import type { ResourceCallOpts } from "./options.js";
 import type {
   Subscription,
   CreateSubscriptionRequest,
@@ -15,34 +16,43 @@ export type ListSubscriptionsQuery = {
 export class SubscriptionsResource {
   constructor(private readonly http: HttpClient) {}
 
-  list(query?: ListSubscriptionsQuery): Promise<CursorPage<Subscription>> {
+  async list(query?: ListSubscriptionsQuery): Promise<CursorPage<Subscription>> {
     return this.http.request("/subscriptions", { query });
   }
 
-  retrieve(subId: string): Promise<Subscription> {
-    return this.http.request(`/subscriptions/${encodeURIComponent(subId)}`);
+  async retrieve(subId: string): Promise<Subscription> {
+    const resp = await this.http.request<unknown>(
+      `/subscriptions/${encodeURIComponent(subId)}`,
+    );
+    return unwrap<Subscription>(resp, "subscription");
   }
 
-  create(input: CreateSubscriptionRequest): Promise<Subscription> {
-    return this.http.request("/subscriptions", {
+  async create(
+    input: CreateSubscriptionRequest,
+    opts?: ResourceCallOpts,
+  ): Promise<Subscription> {
+    const resp = await this.http.request<unknown>("/subscriptions", {
       method: "POST",
       body: input,
-      idempotencyKey: true,
+      idempotencyKey: opts?.idempotencyKey ?? true,
     });
+    return unwrap<Subscription>(resp, "subscription");
   }
 
-  pause(subId: string): Promise<Subscription> {
-    return this.http.request(
+  async pause(subId: string, opts?: ResourceCallOpts): Promise<Subscription> {
+    const resp = await this.http.request<unknown>(
       `/subscriptions/${encodeURIComponent(subId)}/pause`,
-      { method: "POST" },
+      { method: "POST", idempotencyKey: opts?.idempotencyKey ?? true },
     );
+    return unwrap<Subscription>(resp, "subscription");
   }
 
-  resume(subId: string): Promise<Subscription> {
-    return this.http.request(
+  async resume(subId: string, opts?: ResourceCallOpts): Promise<Subscription> {
+    const resp = await this.http.request<unknown>(
       `/subscriptions/${encodeURIComponent(subId)}/resume`,
-      { method: "POST" },
+      { method: "POST", idempotencyKey: opts?.idempotencyKey ?? true },
     );
+    return unwrap<Subscription>(resp, "subscription");
   }
 
   /**
@@ -50,27 +60,39 @@ export class SubscriptionsResource {
    * the subscription to auto-cancel at the next billing boundary. Default
    * is `"at_period_end"`. Optional `reason` is recorded on the audit log.
    */
-  cancel(
+  async cancel(
     subId: string,
     body?: { mode?: "immediately" | "at_period_end"; reason?: string },
+    opts?: ResourceCallOpts,
   ): Promise<Subscription> {
-    return this.http.request(
+    const resp = await this.http.request<unknown>(
       `/subscriptions/${encodeURIComponent(subId)}/cancel`,
-      { method: "POST", body: body ?? {} },
+      {
+        method: "POST",
+        body: body ?? {},
+        idempotencyKey: opts?.idempotencyKey ?? true,
+      },
     );
+    return unwrap<Subscription>(resp, "subscription");
   }
 
   /**
    * `prorationMode: "immediately"` prorates and bills now; `"at_period_end"`
    * defers the swap. Default is `"at_period_end"`.
    */
-  changePlan(
+  async changePlan(
     subId: string,
     body: { priceId: string; prorationMode?: "immediately" | "at_period_end" },
+    opts?: ResourceCallOpts,
   ): Promise<Subscription> {
-    return this.http.request(
+    const resp = await this.http.request<unknown>(
       `/subscriptions/${encodeURIComponent(subId)}/change_plan`,
-      { method: "POST", body, idempotencyKey: true },
+      {
+        method: "POST",
+        body,
+        idempotencyKey: opts?.idempotencyKey ?? true,
+      },
     );
+    return unwrap<Subscription>(resp, "subscription");
   }
 }

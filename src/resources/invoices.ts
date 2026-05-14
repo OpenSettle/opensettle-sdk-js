@@ -1,52 +1,68 @@
-import type { HttpClient } from "../http.js";
-import type { Invoice, CreateInvoiceRequest, CursorPage } from "./types.js";
+import { unwrap, type HttpClient } from "../http.js";
+import type { ResourceCallOpts } from "./options.js";
+import type {
+  Invoice,
+  InvoiceStatus,
+  CreateInvoiceRequest,
+  CursorPage,
+} from "./types.js";
 
 export type ListInvoicesQuery = {
   cursor?: string;
   limit?: number;
   customerId?: string;
-  status?: string;
+  status?: InvoiceStatus;
 };
 
 export class InvoicesResource {
   constructor(private readonly http: HttpClient) {}
 
-  list(query?: ListInvoicesQuery): Promise<CursorPage<Invoice>> {
+  async list(query?: ListInvoicesQuery): Promise<CursorPage<Invoice>> {
     return this.http.request("/invoices", { query });
   }
 
-  retrieve(invoiceId: string): Promise<Invoice> {
-    return this.http.request(`/invoices/${encodeURIComponent(invoiceId)}`);
+  async retrieve(invoiceId: string): Promise<Invoice> {
+    const resp = await this.http.request<unknown>(
+      `/invoices/${encodeURIComponent(invoiceId)}`,
+    );
+    return unwrap<Invoice>(resp, "invoice");
   }
 
-  create(input: CreateInvoiceRequest): Promise<Invoice> {
-    return this.http.request("/invoices", {
+  async create(
+    input: CreateInvoiceRequest,
+    opts?: ResourceCallOpts,
+  ): Promise<Invoice> {
+    const resp = await this.http.request<unknown>("/invoices", {
       method: "POST",
       body: input,
-      idempotencyKey: true,
+      idempotencyKey: opts?.idempotencyKey ?? true,
     });
+    return unwrap<Invoice>(resp, "invoice");
   }
 
   /** Email the hosted invoice link to the customer. */
-  send(invoiceId: string): Promise<Invoice> {
-    return this.http.request(
+  async send(invoiceId: string, opts?: ResourceCallOpts): Promise<Invoice> {
+    const resp = await this.http.request<unknown>(
       `/invoices/${encodeURIComponent(invoiceId)}/send`,
-      { method: "POST", idempotencyKey: true },
+      { method: "POST", idempotencyKey: opts?.idempotencyKey ?? true },
     );
+    return unwrap<Invoice>(resp, "invoice");
   }
 
   /** Re-send a reminder for an unpaid invoice. */
-  remind(invoiceId: string): Promise<Invoice> {
-    return this.http.request(
+  async remind(invoiceId: string, opts?: ResourceCallOpts): Promise<Invoice> {
+    const resp = await this.http.request<unknown>(
       `/invoices/${encodeURIComponent(invoiceId)}/reminder`,
-      { method: "POST", idempotencyKey: true },
+      { method: "POST", idempotencyKey: opts?.idempotencyKey ?? true },
     );
+    return unwrap<Invoice>(resp, "invoice");
   }
 
-  void(invoiceId: string): Promise<Invoice> {
-    return this.http.request(
+  async void(invoiceId: string): Promise<Invoice> {
+    const resp = await this.http.request<unknown>(
       `/invoices/${encodeURIComponent(invoiceId)}/void`,
       { method: "POST" },
     );
+    return unwrap<Invoice>(resp, "invoice");
   }
 }

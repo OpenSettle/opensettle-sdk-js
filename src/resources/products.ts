@@ -1,4 +1,5 @@
-import type { HttpClient } from "../http.js";
+import { unwrap, type HttpClient } from "../http.js";
+import type { ResourceCallOpts } from "./options.js";
 import type {
   Product,
   CreateProductRequest,
@@ -17,47 +18,62 @@ export type ListProductsQuery = {
 export class ProductsResource {
   constructor(private readonly http: HttpClient) {}
 
-  list(query?: ListProductsQuery): Promise<CursorPage<Product>> {
+  async list(query?: ListProductsQuery): Promise<CursorPage<Product>> {
     return this.http.request("/products", { query });
   }
 
-  retrieve(productId: string): Promise<Product> {
-    return this.http.request(`/products/${encodeURIComponent(productId)}`);
+  async retrieve(productId: string): Promise<Product> {
+    const resp = await this.http.request<unknown>(
+      `/products/${encodeURIComponent(productId)}`,
+    );
+    return unwrap<Product>(resp, "product");
   }
 
-  create(input: CreateProductRequest): Promise<Product> {
-    return this.http.request("/products", {
+  async create(
+    input: CreateProductRequest,
+    opts?: ResourceCallOpts,
+  ): Promise<Product> {
+    const resp = await this.http.request<unknown>("/products", {
       method: "POST",
       body: input,
-      idempotencyKey: true,
+      idempotencyKey: opts?.idempotencyKey ?? true,
     });
+    return unwrap<Product>(resp, "product");
   }
 
-  update(productId: string, input: UpdateProductRequest): Promise<Product> {
-    return this.http.request(`/products/${encodeURIComponent(productId)}`, {
-      method: "PATCH",
-      body: input,
-    });
+  async update(
+    productId: string,
+    input: UpdateProductRequest,
+  ): Promise<Product> {
+    const resp = await this.http.request<unknown>(
+      `/products/${encodeURIComponent(productId)}`,
+      { method: "PATCH", body: input },
+    );
+    return unwrap<Product>(resp, "product");
   }
 
   // Prices are nested under products.
 
-  listPrices(
-    productId: string,
-  ): Promise<{ data: Price[] }> {
+  listPrices(productId: string): Promise<{ data: Price[] }> {
     return this.http.request(
       `/products/${encodeURIComponent(productId)}/prices`,
     );
   }
 
-  createPrice(
+  async createPrice(
     productId: string,
     input: CreatePriceRequest,
+    opts?: ResourceCallOpts,
   ): Promise<Price> {
-    return this.http.request(
+    const resp = await this.http.request<unknown>(
       `/products/${encodeURIComponent(productId)}/prices`,
-      { method: "POST", body: input, idempotencyKey: true },
+      {
+        method: "POST",
+        body: input,
+        idempotencyKey: opts?.idempotencyKey ?? true,
+      },
     );
+    return unwrap<Price>(resp, "price");
   }
 
   /**
@@ -74,9 +90,11 @@ export class ProductsResource {
    * Hard-delete a price. Returns 409 if any subscription still references
    * it; clean up the dependent subscriptions first.
    */
-  deletePrice(priceId: string): Promise<void> {
-    return this.http.request(`/prices/${encodeURIComponent(priceId)}`, {
-      method: "DELETE",
-    });
+  async deletePrice(priceId: string): Promise<Price> {
+    const resp = await this.http.request<unknown>(
+      `/prices/${encodeURIComponent(priceId)}`,
+      { method: "DELETE" },
+    );
+    return unwrap<Price>(resp, "price");
   }
 }

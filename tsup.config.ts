@@ -8,6 +8,9 @@ export default defineConfig({
   },
   format: ["esm", "cjs"],
   dts: true,
+  // Match `engines.node >= 20`. Without an explicit target, future tsup
+  // defaults could silently downlevel to an older Node baseline.
+  target: "node20",
   clean: true,
   sourcemap: false,
   splitting: false,

@@ -44,18 +44,33 @@ export class WebhookVerificationError extends Error {
 
 const DEFAULT_TOLERANCE_SECONDS = 300;
 
+export class WebhookSecretError extends Error {
+  override readonly name = "WebhookSecretError";
+}
+
 export function verifyWebhook<T = unknown>(opts: {
-  /** The exact bytes of the request body, as a string. */
-  rawBody: string;
+  /**
+   * The exact bytes of the request body. Accepts a `string`, `Buffer`,
+   * or `Uint8Array` so frameworks that hand back binary payloads (e.g.
+   * `express.raw()`) work without an extra `toString()` step. Strings
+   * are encoded as UTF-8 to match what the API signed against.
+   */
+  rawBody: string | Buffer | Uint8Array;
   /** The `x-opensettle-signature` header value. */
   signatureHeader: string | null | undefined;
-  /** The endpoint's signing secret. */
+  /** The endpoint's signing secret. Must be non-empty. */
   secret: string;
   /** Tolerance window for the timestamp, in seconds. Defaults to 300s. */
   tolerance?: number;
   /** Override "now" (epoch seconds). Mainly for tests. */
   now?: number;
 }): VerifiedWebhook<T> {
+  if (typeof opts.secret !== "string" || opts.secret.length === 0) {
+    throw new WebhookSecretError(
+      "verifyWebhook requires a non-empty `secret`. Pass the per-endpoint signing secret returned when the webhook endpoint was created or rotated.",
+    );
+  }
+
   if (!opts.signatureHeader) {
     throw new WebhookVerificationError(
       "Missing x-opensettle-signature header",
@@ -83,8 +98,11 @@ export function verifyWebhook<T = unknown>(opts: {
     }
   }
 
+  const bodyBuf = toBytes(opts.rawBody);
+  const tsBuf = Buffer.from(`${timestamp}.`, "utf8");
   const expected = createHmac("sha256", opts.secret)
-    .update(`${timestamp}.${opts.rawBody}`)
+    .update(tsBuf)
+    .update(bodyBuf)
     .digest("hex");
 
   // Constant-time compare requires equal-length buffers — bail early on
@@ -105,7 +123,7 @@ export function verifyWebhook<T = unknown>(opts: {
 
   let data: T;
   try {
-    data = JSON.parse(opts.rawBody) as T;
+    data = JSON.parse(bodyBuf.toString("utf8")) as T;
   } catch {
     throw new WebhookVerificationError(
       "Body is not valid JSON",
@@ -113,6 +131,12 @@ export function verifyWebhook<T = unknown>(opts: {
     );
   }
   return { data, timestamp };
+}
+
+function toBytes(input: string | Buffer | Uint8Array): Buffer {
+  if (typeof input === "string") return Buffer.from(input, "utf8");
+  if (Buffer.isBuffer(input)) return input;
+  return Buffer.from(input.buffer, input.byteOffset, input.byteLength);
 }
 
 function parseSignatureHeader(

@@ -3,6 +3,7 @@ export { HttpClient, type ClientConfig, type RequestOptions } from "./http.js";
 export {
   verifyWebhook,
   WebhookVerificationError,
+  WebhookSecretError,
   type VerifiedWebhook,
 } from "./webhooks.js";
 export {
@@ -11,6 +12,7 @@ export {
   InvalidStateTransitionError,
   AuthenticationError,
   ForbiddenError,
+  RestrictedJurisdictionError,
   NotFoundError,
   ConflictError,
   RateLimitError,
@@ -20,7 +22,18 @@ export {
   NetworkError,
   type ErrorCode,
 } from "./errors.js";
+export type { ResourceCallOpts } from "./resources/options.js";
+export type { DeletedAck } from "./resources/customers.js";
+export type { WebhookTestResult } from "./resources/webhook-endpoints.js";
 export { SDK_VERSION } from "./version.js";
+export { paginate, type Page } from "./pagination.js";
+export {
+  waitFor,
+  WaitTimeoutError,
+  type WaitForOptions,
+  DEFAULT_TIMEOUT_MS,
+  DEFAULT_INTERVAL_MS,
+} from "./wait.js";
 
 export type {
   Customer,

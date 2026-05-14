@@ -7,11 +7,16 @@ billing on Base, Ethereum, Polygon, and Arbitrum.
 ![types](https://img.shields.io/badge/types-included-blue)
 ![node](https://img.shields.io/node/v/@opensettle/sdk)
 
-> **Status: 0.1.x — initial release.** API surface is stable; we'll bump to
-> 1.0.0 once it's been used in real merchant integrations for a quarter
-> without breaking changes. Source at
+> **Status: 0.5.x.** Pre-1.0 — minor versions may still introduce small
+> breaking changes (see [CHANGELOG](./CHANGELOG.md)). We'll bump to 1.0.0
+> once the surface has been stable in real merchant integrations for a
+> quarter. Source at
 > [github.com/OpenSettle/opensettle-sdk-js](https://github.com/OpenSettle/opensettle-sdk-js);
-> for urgent issues email [opensettle@proton.me](mailto:opensettle@proton.me).
+> for urgent issues email [OpenSettle@proton.me](mailto:OpenSettle@proton.me).
+
+Ships both ESM and CJS — works in `import` and `require()` consumers. Type
+declarations are bundled inline so consumers don't need to install any
+companion `@types/…` package.
 
 ## Install
 
@@ -126,22 +131,32 @@ Every error carries `code`, `status`, `message`, `requestId`, and optionally
 
 ## Idempotency
 
-The SDK auto-attaches an `Idempotency-Key` to every money-adjacent write
-(create + refund + send + rotate). Pass an explicit key when you have one
-tied to your domain object — that's safer because retries from your own
-systems won't generate a fresh key:
+Every state-mutating call (create, send, remind, refund, pause, resume,
+cancel, change-plan, rotate, test) auto-attaches a random `Idempotency-Key`
+header. Pass an explicit key tied to a domain object you already own to
+make retries from your own systems collide on the same key — which is what
+keeps the operation safe:
 
 ```ts
-await os.checkouts.create({
-  mode: "payment",
-  customerId: "cus_1",
-  invoiceId: "inv_1",
-  successUrl: "https://example.com/done",
-}, { idempotencyKey: `checkout-${orderId}` });
+await os.checkouts.create(
+  {
+    mode: "payment",
+    customerId: "cus_1",
+    invoiceId: "inv_1",
+    successUrl: "https://example.com/done",
+  },
+  { idempotencyKey: `checkout-${orderId}` },
+);
+
+await os.subscriptions.cancel(
+  "sub_…",
+  { mode: "at_period_end" },
+  { idempotencyKey: `cancel-${orderId}` },
+);
 ```
 
-(The SDK's resource methods construct the key automatically; pass-through
-is exposed via `os.http.request(...)` for advanced use.)
+For low-level access (custom routes, header overrides) the underlying
+client is exposed as `os.http.request(...)`.
 
 ## Webhooks
 
@@ -186,16 +201,68 @@ Default tolerance is 5 minutes; pass `tolerance: <seconds>` to override (or
 
 ## Resources
 
-- `os.customers` — `list`, `retrieve`, `create`, `update`, `del`
+- `os.customers` — `list`, `retrieve`, `create`, `update`, `delete` (alias `del`)
 - `os.products` — `list`, `retrieve`, `create`, `update`, `delete`, `listPrices`, `createPrice`, `deletePrice`
 - `os.invoices` — `list`, `retrieve`, `create`, `send`, `remind`, `void`
 - `os.checkouts` — `create`, `retrieve`
 - `os.subscriptions` — `list`, `retrieve`, `create`, `pause`, `resume`, `cancel`, `changePlan`
 - `os.payments` — `list`, `retrieve`, `refund`, `refundBroadcast`
-- `os.webhookEndpoints` — `list`, `retrieve`, `create`, `update`, `del`, `rotateSecret`, `test`
+- `os.webhookEndpoints` — `list`, `retrieve`, `create`, `update`, `delete` (alias `del`), `rotateSecret`, `test`
 
 Each method returns the typed resource. Refer to the [API reference](https://opensettle.io/docs/api)
 for the full field set per resource.
+
+## Pagination
+
+`list` endpoints return a cursor-paged envelope (`{ data, nextCursor, hasMore }`).
+The `paginate` helper threads the cursor through every call and yields every
+item across every page as an `AsyncGenerator` — no manual pagination loop
+needed:
+
+```ts
+import { paginate } from "@opensettle/sdk";
+
+for await (const customer of paginate(os.customers.list.bind(os.customers))) {
+  console.log(customer.id, customer.email);
+}
+
+// Pass filters as the second argument; the cursor is threaded automatically.
+for await (const inv of paginate(
+  os.invoices.list.bind(os.invoices),
+  { status: "open" },
+)) {
+  console.log(inv.id);
+}
+```
+
+## Polling helpers
+
+Webhooks are the right tool for production, but in scripts, CI, and tests
+it's useful to block until a resource transitions. `waitFor` polls a
+resource's `retrieve` at a fixed interval until your predicate is satisfied
+— or rejects with `WaitTimeoutError` (its `.last` is the last-observed
+resource for debugging).
+
+```ts
+import { waitFor, WaitTimeoutError } from "@opensettle/sdk";
+
+const checkout = await os.checkouts.create({ /* … */ });
+
+try {
+  const done = await waitFor(
+    (id) => os.checkouts.retrieve(id),
+    checkout.id,
+    (c) => c.status === "succeeded" || c.status === "failed",
+    { timeoutMs: 120_000, intervalMs: 1_500 },  // defaults: 120s / 2s
+  );
+  console.log(done.status);
+} catch (err) {
+  if (err instanceof WaitTimeoutError) {
+    // err.last is the last-observed resource
+  }
+  throw err;
+}
+```
 
 ## Test mode
 

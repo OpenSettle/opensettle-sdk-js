@@ -5,6 +5,98 @@ All notable changes to `@opensettle/sdk` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-05-14
+
+### Fixed (critical — published `0.4.0` shipped with these wire bugs)
+
+- **`subscriptions.cancel`, `pause`, `resume`** — previously did not
+  attach an `Idempotency-Key`. The API requires the header on every
+  state-mutating subscription route, so these three methods returned
+  `400 invalid_request` from the server in `0.4.0` and earlier. The SDK
+  now auto-generates a key (and accepts a caller-supplied one via the
+  new `ResourceCallOpts.idempotencyKey`).
+- **`webhookEndpoints.test()`** — the body shape (`{eventType: string}`)
+  and return type (`{ok, status, latencyMs}`) were fabricated; the API
+  ignores any body and returns `{eventId: string}`. Signature is now
+  `test(endpointId, opts?)` returning `WebhookTestResult` (`{eventId}`).
+  Callers passing the old `{eventType}` body need to drop it; the
+  `eventId` field replaces the synthetic `ok/status/latencyMs` fields.
+- **`webhookEndpoints.rotateSecret()`** — accepted a
+  `{graceSeconds?: number}` body that the API silently dropped. The
+  parameter is removed; the rotation grace is server-side configured.
+- **Published `.d.ts` files leaked `@opensettle/shared` imports.** The
+  workspace's source-only schema package is `devDependencies`-only, so
+  TypeScript consumers of `0.4.0` saw `Cannot find module
+  '@opensettle/shared/schemas/...'` errors for every public type. SDK
+  type definitions are now inlined — the published declarations have
+  zero references to internal workspace packages.
+- **`OpenSettleError` exposes `metadata`.** The API's error envelope
+  carries a free-form `metadata` field (currently used by
+  `restricted_jurisdiction` to ship `{ code, name, reason }`); the
+  v0.4.0 SDK silently dropped it.
+- **`verifyWebhook` accepts `Buffer` and `Uint8Array` raw bodies.**
+  Previously string-only, which forced callers to round-trip through
+  UTF-8 — multi-byte payloads could re-encode and break HMAC
+  verification. The HMAC is now computed over raw bytes and the JSON
+  is parsed from the same bytes after verification succeeds.
+- **`verifyWebhook` rejects empty `secret`.** Throws the new
+  `WebhookSecretError` upfront so a misconfigured env var doesn't
+  silently let an attacker forge any payload via an empty-key HMAC.
+
+### Added
+
+- **`RestrictedJurisdictionError`** (subclass of `ForbiddenError`) for
+  the `restricted_jurisdiction` API code. Generic `forbidden` handlers
+  still catch it via `instanceof ForbiddenError`. The envelope's
+  `metadata` (`{ code, name, reason }`) is exposed on the error.
+- **`metadata: Record<string, unknown> | null`** field on every
+  `OpenSettleError` subclass.
+- **`WebhookSecretError`** thrown by `verifyWebhook` when `secret` is
+  empty.
+- **`ResourceCallOpts`** — every state-mutating resource method now
+  accepts an optional trailing `{ idempotencyKey?: string }` so callers
+  can tie the request's `Idempotency-Key` to a domain object they
+  already own. Available on
+  `customers.create`, `products.create / createPrice`,
+  `invoices.create / send / remind`, `checkouts.create`,
+  `subscriptions.create / pause / resume / cancel / changePlan`,
+  `payments.refund / refundBroadcast`,
+  `webhookEndpoints.create / rotateSecret / test`.
+- **`customers.delete()` and `webhookEndpoints.delete()`** as the
+  canonical method names; `del` is preserved as a deprecated alias that
+  delegates to `delete`. Return type aligned to what the API actually
+  returns (`{ ok: boolean }`, HTTP 200) instead of `void`.
+- **Compatibility note:** package now sets `"sideEffects": false` for
+  bundler tree-shaking, and the build target is pinned to `node20`
+  (matches `engines.node >= 20`). A `prepublishOnly` hook runs
+  typecheck + tests + build before publish.
+
+### Changed
+
+- **`package.json` description and keywords** walk back the Solana and
+  Tron mentions per the never-executed `0.1.3` commitment ("those
+  chains are not yet available to merchants on the platform — the
+  wallet picker is EVM-only"). The `ChainId` *type* still includes the
+  full enum so future expansion doesn't require an SDK release; only
+  the marketing/copy surfaces are EVM-only.
+- **`InvoicesQuery.status` and `PaymentsQuery.status`** narrowed from
+  `string` to `InvoiceStatus` / `PaymentStatus` so typos fail at
+  compile time.
+- **`payments.refund` / `refundBroadcast` JSDoc** now correctly
+  describes the auth gate: restricted-permission keys receive
+  `ForbiddenError`; only full-permission keys reach the AAL gate where
+  session callers see `StepUpRequiredError`.
+
+### Migration from 0.4.0
+
+- `webhookEndpoints.test(id, { eventType })` → `webhookEndpoints.test(id)`.
+  The return shape changes from `{ok, status, latencyMs}` to `{eventId}`.
+- `webhookEndpoints.rotateSecret(id, { graceSeconds })` →
+  `webhookEndpoints.rotateSecret(id)`.
+- `customers.del`/`webhookEndpoints.del` callers expecting `void` now
+  receive `{ ok: true }`. The `del` aliases continue to work; switching
+  to `customers.delete`/`webhookEndpoints.delete` is recommended.
+
 ## [0.4.0] — 2026-05-12
 
 ### Added

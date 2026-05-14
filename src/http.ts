@@ -311,3 +311,33 @@ function lowercaseKeys(
   }
   return out;
 }
+
+/**
+ * Strip the API's singleton envelope wrapper.
+ *
+ * The API returns most singleton responses as `{customer: {…}}`,
+ * `{product: {…}}` etc. — a single-key wrapper around the resource.
+ * This helper unwraps that wrapper when present, and is a no-op for:
+ *
+ *   - lists (no matching key, returns `{data, nextCursor, hasMore}`
+ *     unchanged)
+ *   - multi-key envelopes such as the refund response
+ *     (`{payment, unsignedTx}`) or webhook create
+ *     (`{endpoint, signingSecret}`)
+ *   - `undefined` / `null` (e.g. 204 No Content)
+ *
+ * Used by resource modules to give callers `os.customers.create(…).id`
+ * instead of `os.customers.create(…).customer.id`.
+ */
+export function unwrap<T>(resp: unknown, key: string): T {
+  if (
+    resp !== null &&
+    typeof resp === "object" &&
+    !Array.isArray(resp) &&
+    Object.keys(resp as Record<string, unknown>).length === 1 &&
+    key in (resp as Record<string, unknown>)
+  ) {
+    return (resp as Record<string, unknown>)[key] as T;
+  }
+  return resp as T;
+}
