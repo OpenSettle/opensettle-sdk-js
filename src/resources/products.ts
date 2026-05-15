@@ -89,12 +89,14 @@ export class ProductsResource {
   /**
    * Hard-delete a price. Returns 409 if any subscription still references
    * it; clean up the dependent subscriptions first.
+   *
+   * The API returns 204 No Content on success — this method resolves to
+   * `void` (matching {@link ProductsResource.delete}). It does **not**
+   * return the deleted `Price`.
    */
-  async deletePrice(priceId: string): Promise<Price> {
-    const resp = await this.http.request<unknown>(
-      `/prices/${encodeURIComponent(priceId)}`,
-      { method: "DELETE" },
-    );
-    return unwrap<Price>(resp, "price");
+  deletePrice(priceId: string): Promise<void> {
+    return this.http.request(`/prices/${encodeURIComponent(priceId)}`, {
+      method: "DELETE",
+    });
   }
 }
