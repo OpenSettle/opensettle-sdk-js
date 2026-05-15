@@ -5,6 +5,28 @@ All notable changes to `@opensettle/sdk` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`products.deletePrice` return type corrected to `Promise<void>`.**
+  The API returns `204 No Content` on hard-delete (same as
+  `products.delete`), but the TypeScript signature claimed
+  `Promise<Price>` and the implementation tried to `unwrap` a non-
+  existent envelope — callers destructuring `(await deletePrice(id)).id`
+  would have hit `undefined` at runtime with no compile-time signal.
+  Method signature is now `deletePrice(priceId): Promise<void>`,
+  matching the existing `products.delete()` shape. Runtime behaviour is
+  unchanged; this is a type-correctness fix.
+
+### Changed
+
+- **`webhookEndpoints.update()` accepts `description: string | null`.**
+  The server schema (`UpdateWebhookEndpointRequest`) permits `null` to
+  clear an existing description; the SDK type previously only allowed
+  `string | undefined`, leaving callers no in-SDK way to wipe the
+  field. No wire change — the value is forwarded as-is.
+
 ## [0.5.0] — 2026-05-14
 
 ### Fixed (critical — published `0.4.0` shipped with these wire bugs)
