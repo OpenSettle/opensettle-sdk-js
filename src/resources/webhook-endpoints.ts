@@ -48,7 +48,8 @@ export class WebhookEndpointsResource {
     endpointId: string,
     input: Partial<{
       url: string;
-      description: string;
+      /** Pass `null` to clear an existing description. */
+      description: string | null;
       events: string[];
       status: "enabled" | "disabled";
     }>,
