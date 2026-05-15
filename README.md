@@ -62,6 +62,16 @@ const invoice = await os.invoices.create({
 await os.invoices.send(invoice.id);            // emails the customer the link
 ```
 
+## Hosted checkout: EVM-only today
+
+The API accepts `chain: "solana"` or `chain: "tron"` on a checkout and the
+chain reader will detect inbound SPL / TRC-20 deposits to verified wallets,
+but the customer-facing **hosted checkout page is currently EVM-only**:
+Base, Ethereum, Polygon, and Arbitrum. If you create a checkout with
+`chain: "solana"` or `chain: "tron"`, the hosted page will not render a
+payable flow for the customer today. Use one of the EVM chains for hosted
+checkouts until non-EVM hosted-checkout support ships.
+
 ## Configuration
 
 ```ts

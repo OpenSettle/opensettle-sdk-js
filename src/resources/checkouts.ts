@@ -5,6 +5,16 @@ import type { Checkout, CreateCheckoutRequest } from "./types.js";
 export class CheckoutsResource {
   constructor(private readonly http: HttpClient) {}
 
+  /**
+   * Create a hosted checkout session.
+   *
+   * **Hosted checkout is currently EVM-only.** While the API accepts
+   * `chain: "solana"` or `chain: "tron"` on a checkout (and Solana / Tron
+   * inbound deposits are detected to verified wallets at the chain-reader
+   * layer), the customer-facing hosted checkout page only supports the EVM
+   * chains: Base, Ethereum, Polygon, and Arbitrum. Non-EVM checkouts will
+   * not render a payable page today.
+   */
   async create(
     input: CreateCheckoutRequest,
     opts?: ResourceCallOpts,
