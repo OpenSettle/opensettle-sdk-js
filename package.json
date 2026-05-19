@@ -1,6 +1,6 @@
 {
   "name": "@opensettle/sdk",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Official Node SDK for the OpenSettle API. Stablecoin billing on Base, Ethereum, Polygon, and Arbitrum.",
   "license": "MIT",
   "homepage": "https://opensettle.io",

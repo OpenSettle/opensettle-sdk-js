@@ -28,6 +28,7 @@ export type ErrorCode =
   | "signing_required"
   | "aal_required"
   | "restricted_jurisdiction"
+  | "kyb_required"
   | "network_error";
 
 export class OpenSettleError extends Error {
@@ -83,6 +84,16 @@ export class ForbiddenError extends OpenSettleError {
  */
 export class RestrictedJurisdictionError extends ForbiddenError {
   override readonly name: string = "RestrictedJurisdictionError";
+}
+/**
+ * `kyb_required` — live-mode mutation refused because the merchant
+ * workspace has not yet completed KYB verification. Reserved from
+ * the 2026-05-16 platform audit; surfaced once a KYB provider is
+ * wired AND `KYB_REQUIRED_FOR_LIVE=1`. `metadata.kybStatus` tells
+ * the dashboard which banner to render.
+ */
+export class KybRequiredError extends ForbiddenError {
+  override readonly name: string = "KybRequiredError";
 }
 export class NotFoundError extends OpenSettleError {
   override readonly name = "NotFoundError";
@@ -159,6 +170,8 @@ export function fromEnvelope(
       return new ForbiddenError({ ...opts, code });
     case "restricted_jurisdiction":
       return new RestrictedJurisdictionError({ ...opts, code });
+    case "kyb_required":
+      return new KybRequiredError({ ...opts, code });
     case "not_found":
       return new NotFoundError({ ...opts, code });
     case "conflict":

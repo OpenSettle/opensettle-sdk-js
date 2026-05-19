@@ -12,7 +12,7 @@ billing on Base, Ethereum, Polygon, and Arbitrum.
 > once the surface has been stable in real merchant integrations for a
 > quarter. Source at
 > [github.com/OpenSettle/opensettle-sdk-js](https://github.com/OpenSettle/opensettle-sdk-js);
-> for urgent issues email [OpenSettle@proton.me](mailto:OpenSettle@proton.me).
+> for urgent issues email [security@opensettle.io](mailto:security@opensettle.io).
 
 Ships both ESM and CJS — works in `import` and `require()` consumers. Type
 declarations are bundled inline so consumers don't need to install any

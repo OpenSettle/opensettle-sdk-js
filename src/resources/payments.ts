@@ -8,12 +8,32 @@ import type {
   CursorPage,
 } from "./types.js";
 
+/**
+ * Sanctions-screening verdict. Surfaces on every Payment row;
+ * filter parameter for `payments.list()` so ops can scan the
+ * flagged queue.
+ */
+export type ScreeningVerdict =
+  | "not_screened"
+  | "screened_clean"
+  | "screened_flagged"
+  | "screen_error";
+
 export type ListPaymentsQuery = {
   cursor?: string;
   limit?: number;
   customerId?: string;
   subscriptionId?: string;
   status?: PaymentStatus;
+  /**
+   * Filter by sanctions-screening verdict. Backed server-side by the
+   * partial index `payments_screening_verdict_idx` so a
+   * `screened_flagged` query stays cheap at scale. Today's default
+   * with the NoopScreeningProvider is every payment landing as
+   * `not_screened`; once Chainalysis/TRM is wired this is the
+   * primary ops triage surface.
+   */
+  screeningVerdict?: ScreeningVerdict;
 };
 
 export class PaymentsResource {

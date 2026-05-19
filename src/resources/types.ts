@@ -198,6 +198,22 @@ export type Payment = {
   refundBroadcastAt: string | null;
   refundedAt: string | null;
   refundReason: string | null;
+  /**
+   * Sanctions-screening verdict (server populated). Today's default
+   * with the NoopScreeningProvider is `not_screened`. Once a real
+   * provider is wired, individual rows transition to
+   * `screened_clean` / `screened_flagged` / `screen_error`. The
+   * `screened_flagged` rows are the ops triage queue.
+   */
+  screeningVerdict:
+    | "not_screened"
+    | "screened_clean"
+    | "screened_flagged"
+    | "screen_error";
+  /** Provider name of record (e.g. "chainalysis", "trm") or null. */
+  screeningProvider: string | null;
+  /** ISO-8601 timestamp; null when `screeningVerdict === "not_screened"`. */
+  screeningScreenedAt: string | null;
   createdAt: string;
   confirmedAt: string | null;
 };

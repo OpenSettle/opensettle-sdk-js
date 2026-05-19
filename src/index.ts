@@ -13,6 +13,7 @@ export {
   AuthenticationError,
   ForbiddenError,
   RestrictedJurisdictionError,
+  KybRequiredError,
   NotFoundError,
   ConflictError,
   RateLimitError,

@@ -5,7 +5,22 @@ All notable changes to `@opensettle/sdk` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.1] — 2026-05-19
+
+### Added
+
+- **`Payment` carries sanctions-screening fields.** Three new optional
+  fields on the `Payment` type:
+    - `screeningVerdict: "not_screened" | "screened_clean" | "screened_flagged" | "screen_error"`
+    - `screeningProvider: string | null`
+    - `screeningScreenedAt: string | null`
+  These mirror the columns landed in the API in migration 0038 and let
+  callers filter the ops triage queue (`screened_flagged`) without an
+  out-of-band query. Default with the no-op provider is `not_screened`
+  on every row.
+- **`payments.list` accepts `screeningVerdict` query parameter.** Backed
+  by a partial index so a `screened_flagged` filter stays cheap at
+  scale.
 
 ### Fixed
 
@@ -26,6 +41,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   clear an existing description; the SDK type previously only allowed
   `string | undefined`, leaving callers no in-SDK way to wipe the
   field. No wire change — the value is forwarded as-is.
+- Security contact email updated from `OpenSettle@proton.me` to
+  `security@opensettle.io` in README + SECURITY.
 
 ## [0.5.0] — 2026-05-14
 
