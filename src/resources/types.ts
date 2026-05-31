@@ -210,7 +210,7 @@ export type Payment = {
     | "screened_clean"
     | "screened_flagged"
     | "screen_error";
-  /** Provider name of record (e.g. "chainalysis", "trm") or null. */
+  /** Screening provider name of record, or null. Today this is the in-house no-op provider, so it is null on every payment row. */
   screeningProvider: string | null;
   /** ISO-8601 timestamp; null when `screeningVerdict === "not_screened"`. */
   screeningScreenedAt: string | null;
@@ -369,8 +369,8 @@ export type Checkout = {
   metadata: Record<string, unknown> | null;
   createdAt: string;
   /**
-   * Public URL path for redirecting the buyer. Concatenate with the web
-   * origin (e.g. `https://opensettle.io${checkout.hostedUrl}`). Uses an
+   * Absolute URL for redirecting the buyer to the OpenSettle-hosted
+   * checkout page — use it directly (no concatenation needed). Uses an
    * unguessable hosted-token, not the timestamp-prefixed `id`, so siblings
    * can't be brute-force enumerated.
    */

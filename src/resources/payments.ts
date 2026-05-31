@@ -30,7 +30,7 @@ export type ListPaymentsQuery = {
    * partial index `payments_screening_verdict_idx` so a
    * `screened_flagged` query stays cheap at scale. Today's default
    * with the NoopScreeningProvider is every payment landing as
-   * `not_screened`; once Chainalysis/TRM is wired this is the
+   * `not_screened`; once screening verdicts are populated this is the
    * primary ops triage surface.
    */
   screeningVerdict?: ScreeningVerdict;
