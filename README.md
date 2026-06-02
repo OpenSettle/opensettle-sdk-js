@@ -1,7 +1,7 @@
 # @opensettle/sdk
 
 Official Node SDK for the [OpenSettle](https://opensettle.io) API. Stablecoin
-billing on Base, Ethereum, Polygon, and Arbitrum.
+billing on Base, Ethereum, Polygon, Arbitrum, Solana, and Tron.
 
 [![npm](https://img.shields.io/npm/v/@opensettle/sdk.svg)](https://www.npmjs.com/package/@opensettle/sdk)
 ![types](https://img.shields.io/badge/types-included-blue)
@@ -208,6 +208,12 @@ Default tolerance is 5 minutes; pass `tolerance: <seconds>` to override (or
 > sees it (Express body-parser default, etc.) destroy the original bytes —
 > you'll get spurious `signature_mismatch` errors. Configure raw-body access
 > on the webhook route only.
+
+## Recipes
+
+Runnable, compile-tested examples — hosted checkout, subscriptions, webhook
+verification, pagination, and refunds — across all four SDKs in the
+[OpenSettle Cookbook](https://github.com/OpenSettle/opensettle-cookbook).
 
 ## Resources
 
