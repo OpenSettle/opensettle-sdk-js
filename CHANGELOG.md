@@ -39,6 +39,26 @@ published release).
   `Product` response. Mirrors `ProductCategory` in
   `packages/shared/src/schemas/product.ts`; drives the API's per-state
   legality checks and audit-pack categorization.
+- **`os.paymentLinks` resource (NEW).** Create + manage reusable
+  `/pay/:token` payment links — `create`, `list`, `deactivate` (alias
+  `del`). The amount comes from exactly one source: a saved one-time
+  `priceId`, a fixed ad-hoc `amount` (minor units), or `openAmount: true`
+  ("name your price" / top-up, with optional `minAmount` / `maxAmount` /
+  `presetAmounts`). `create` sends an `Idempotency-Key` by default. New
+  `PaymentLink` + `CreatePaymentLinkRequest` types. Mirrors
+  `apps/api/src/http/routes/payment-links.ts` and
+  `packages/shared/src/schemas/payment-link.ts`.
+- **`Payment` reconciled with the authoritative OpenAPI schema.** Added
+  the missing fields the API already serializes: `checkoutId`,
+  `refundRecipient`, `tokenAmountBase`, `unmatchedInbound`,
+  `closeMatchCheckoutId`, `expectedTokenAmountBase`,
+  `receivedTokenAmountBase`, and `reorgSuspected`. Purely additive — no
+  existing field changed shape.
+- **`WEBHOOK_EVENTS` + `WebhookEventType` (NEW).** A typed, exhaustively-
+  switchable union of all 38 webhook event names the platform emits, plus
+  an `isWebhookEventType()` runtime guard. Import it to give a verified
+  delivery's `type` a precise type and let the compiler flag unhandled
+  cases. Mirrors the server event registry.
 
 ### Changed
 

@@ -5,6 +5,7 @@ import { InvoicesResource } from "./resources/invoices.js";
 import { PaymentsResource } from "./resources/payments.js";
 import { SubscriptionsResource } from "./resources/subscriptions.js";
 import { ProductsResource } from "./resources/products.js";
+import { PaymentLinksResource } from "./resources/payment-links.js";
 import { WebhookEndpointsResource } from "./resources/webhook-endpoints.js";
 
 /**
@@ -38,6 +39,7 @@ export class OpenSettle {
   private _payments?: PaymentsResource;
   private _subscriptions?: SubscriptionsResource;
   private _products?: ProductsResource;
+  private _paymentLinks?: PaymentLinksResource;
   private _webhookEndpoints?: WebhookEndpointsResource;
 
   constructor(config: ClientConfig) {
@@ -61,6 +63,9 @@ export class OpenSettle {
   }
   get products(): ProductsResource {
     return (this._products ??= new ProductsResource(this.http));
+  }
+  get paymentLinks(): PaymentLinksResource {
+    return (this._paymentLinks ??= new PaymentLinksResource(this.http));
   }
   get webhookEndpoints(): WebhookEndpointsResource {
     return (this._webhookEndpoints ??= new WebhookEndpointsResource(this.http));

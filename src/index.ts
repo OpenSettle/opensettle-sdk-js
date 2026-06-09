@@ -7,6 +7,11 @@ export {
   type VerifiedWebhook,
 } from "./webhooks.js";
 export {
+  WEBHOOK_EVENTS,
+  isWebhookEventType,
+  type WebhookEventType,
+} from "./webhook-events.js";
+export {
   OpenSettleError,
   InvalidRequestError,
   InvalidStateTransitionError,
@@ -64,6 +69,8 @@ export type {
   CheckoutMode,
   CheckoutStatus,
   CreateCheckoutRequest,
+  PaymentLink,
+  CreatePaymentLinkRequest,
   WebhookEndpoint,
   WebhookEndpointStatus,
   CreateWebhookEndpointRequest,
@@ -80,4 +87,5 @@ export type { InvoicesResource } from "./resources/invoices.js";
 export type { PaymentsResource } from "./resources/payments.js";
 export type { SubscriptionsResource } from "./resources/subscriptions.js";
 export type { ProductsResource } from "./resources/products.js";
+export type { PaymentLinksResource } from "./resources/payment-links.js";
 export type { WebhookEndpointsResource } from "./resources/webhook-endpoints.js";

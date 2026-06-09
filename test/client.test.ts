@@ -218,6 +218,66 @@ describe("OpenSettle client wiring", () => {
       expect(r.id).toBe("ch_1");
     });
 
+    it("paymentLinks.create unwraps {paymentLink: …} and sends an idempotency key", async () => {
+      const fetchMock = vi.fn(async () =>
+        jsonResponse({
+          paymentLink: {
+            id: "pl_1",
+            url: "https://opensettle.io/pay/tok_abc",
+            amountMinor: 2500,
+            openAmount: false,
+            active: true,
+          },
+        }),
+      );
+      const r = await client(fetchMock).paymentLinks.create({
+        amount: 2500,
+        description: "Pro plan",
+        chain: "base",
+        token: "USDC",
+      });
+      expect(r.id).toBe("pl_1");
+      expect(r.url).toBe("https://opensettle.io/pay/tok_abc");
+      // The wrapper key is stripped.
+      expect((r as { paymentLink?: unknown }).paymentLink).toBeUndefined();
+      const [url, init] = fetchMock.mock.calls[0] as unknown as [
+        string,
+        RequestInit,
+      ];
+      expect(url).toBe(`https://api.example.com/v1/workspaces/${WS}/payment_links`);
+      expect(init.method).toBe("POST");
+      expect(
+        (init.headers as Record<string, string>)["idempotency-key"],
+      ).toBeTruthy();
+    });
+
+    it("paymentLinks.list returns the raw array (not the {data} envelope)", async () => {
+      const fetchMock = vi.fn(async () =>
+        jsonResponse({ data: [{ id: "pl_1" }, { id: "pl_2" }] }),
+      );
+      const r = await client(fetchMock).paymentLinks.list();
+      expect(Array.isArray(r)).toBe(true);
+      expect(r).toHaveLength(2);
+      expect(r[0]!.id).toBe("pl_1");
+    });
+
+    it("paymentLinks.deactivate (and del alias) DELETEs and returns {ok}", async () => {
+      const fetchMock = vi.fn(async () => jsonResponse({ ok: true }));
+      const c = client(fetchMock);
+      const r = await c.paymentLinks.deactivate("pl_1");
+      expect(r.ok).toBe(true);
+      const [url, init] = fetchMock.mock.calls[0] as unknown as [
+        string,
+        RequestInit,
+      ];
+      expect(url).toBe(
+        `https://api.example.com/v1/workspaces/${WS}/payment_links/pl_1`,
+      );
+      expect(init.method).toBe("DELETE");
+      // `del` is a thin alias for the same call.
+      expect(c.paymentLinks.del).toBeTypeOf("function");
+    });
+
     it("payments.retrieve unwraps {payment: …}", async () => {
       const fetchMock = vi.fn(async () =>
         jsonResponse({ payment: { id: "pay_1", status: "confirmed" } }),

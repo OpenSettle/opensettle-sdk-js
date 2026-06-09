@@ -213,6 +213,8 @@ export type Payment = {
   customerId: string | null;
   subscriptionId: string | null;
   invoiceId: string | null;
+  /** Hosted-checkout session that produced this payment, or null. */
+  checkoutId: string | null;
   walletId: string | null;
   amountMinor: number;
   feeMinor: number;
@@ -228,6 +230,8 @@ export type Payment = {
   confirmations: number;
   refundTxHash: string | null;
   refundAmountMinor: number | null;
+  /** Address the refund was sent to, or null. */
+  refundRecipient: string | null;
   refundBroadcastAt: string | null;
   refundedAt: string | null;
   refundReason: string | null;
@@ -247,6 +251,36 @@ export type Payment = {
   screeningProvider: string | null;
   /** ISO-8601 timestamp; null when `screeningVerdict === "not_screened"`. */
   screeningScreenedAt: string | null;
+  /**
+   * Settled amount in the token's BASE units (e.g. wei / 6-decimal USDC),
+   * as a string to preserve precision. Null until on-chain settlement.
+   */
+  tokenAmountBase: string | null;
+  /**
+   * `true` when chain-ingest observed an inbound transfer it couldn't match
+   * to an open checkout/invoice — an orphaned deposit for ops to reconcile.
+   */
+  unmatchedInbound: boolean;
+  /**
+   * If this row was reconciled via the asymmetric close-match band (the
+   * received amount was within tolerance of an expected checkout), the id of
+   * that checkout; otherwise null.
+   */
+  closeMatchCheckoutId: string | null;
+  /**
+   * Expected on-chain amount in BASE units (string for precision), or null —
+   * what the checkout/invoice asked for. Pair with `receivedTokenAmountBase`
+   * to inspect a close-match delta.
+   */
+  expectedTokenAmountBase: string | null;
+  /** Actually-received on-chain amount in BASE units (string), or null. */
+  receivedTokenAmountBase: string | null;
+  /**
+   * `true` while a confirmed payment's anchoring block looks reorged and the
+   * chain-reader is re-checking. Settles back to `false` (or the payment
+   * transitions to `reorged`) once resolved.
+   */
+  reorgSuspected: boolean;
   createdAt: string;
   confirmedAt: string | null;
 };
@@ -418,6 +452,78 @@ export type Checkout = {
    * can't be brute-force enumerated.
    */
   hostedUrl: string;
+};
+
+// --- payment link (mirrors `payment-link.ts`)
+
+/**
+ * Create a REUSABLE payment link. The merchant fixes the rail
+ * (`chain` + `token`); the public `/pay/:token` URL spawns a fresh checkout
+ * per buyer. The charge AMOUNT comes from **exactly one** source:
+ *
+ *   - `priceId`         — a saved one-time price (catalog SKU).
+ *   - `amount`          — a fixed ad-hoc amount in MINOR units (cents).
+ *   - `openAmount: true`— the buyer types the amount on `/pay` ("name your
+ *                         price" / top-up). Optional `minAmount` / `maxAmount`
+ *                         clamp it and `presetAmounts` renders quick-pick chips.
+ *
+ * `description` is required for a fixed `amount` or an `openAmount` link.
+ */
+export type CreatePaymentLinkRequest = {
+  /** Saved one-time price to charge. Mutually exclusive with `amount` / `openAmount`. */
+  priceId?: string;
+  /** Fixed ad-hoc charge in MINOR units (cents). Mutually exclusive with `priceId` / `openAmount`. */
+  amount?: number;
+  /** Buyer chooses the amount on `/pay`. Mutually exclusive with `priceId` / `amount`. */
+  openAmount?: boolean;
+  /** Open-amount lower clamp (minor units). */
+  minAmount?: number;
+  /** Open-amount upper clamp (minor units). */
+  maxAmount?: number;
+  /** Quick-pick chips for an open-amount link (minor units). 1–8, unique. */
+  presetAmounts?: number[];
+  /** Buyer-facing label. Required for a fixed `amount` or an `openAmount` link. */
+  description?: string;
+  /** ISO-4217 currency. Defaults to USD; must match the token's fiat peg. */
+  currency?: string;
+  /** Settlement chain (required). */
+  chain: ChainId;
+  /** Settlement token (required). */
+  token: TokenSymbol;
+  /** Where the buyer is redirected after a successful pay. */
+  successUrl?: string;
+  metadata?: Record<string, unknown>;
+};
+
+/**
+ * A reusable payment link as the API returns it. `url` is the absolute,
+ * shareable `/pay/:token` link — drop it on a pricing page or send it
+ * directly (no concatenation needed). Each visit spawns its own checkout.
+ */
+export type PaymentLink = {
+  id: string;
+  /** Absolute, shareable `/pay/:token` URL. */
+  url: string;
+  description: string;
+  /** Saved one-time price backing the link, or null for an ad-hoc/open link. */
+  priceId: string | null;
+  /** Fixed charge in MINOR units; `0` for an open-amount link. */
+  amountMinor: number;
+  /** `true` when the buyer names their own price. */
+  openAmount: boolean;
+  /** Open-amount lower clamp (minor units), or null. */
+  minAmountMinor: number | null;
+  /** Open-amount upper clamp (minor units), or null. */
+  maxAmountMinor: number | null;
+  /** Quick-pick chips (minor units), or null. */
+  presetAmounts: number[] | null;
+  currency: string;
+  chain: ChainId;
+  token: TokenSymbol;
+  successUrl: string;
+  /** `false` once the link has been deactivated. */
+  active: boolean;
+  createdAt: string;
 };
 
 // --- webhook endpoint (mirrors `webhook.ts`)

@@ -260,6 +260,7 @@ if (data.type === "subscription.renewed") {
 - `os.products` — `list`, `retrieve`, `create`, `update`, `delete`, `listPrices`, `createPrice`, `deletePrice`
 - `os.invoices` — `list`, `retrieve`, `create`, `send`, `remind`, `void`
 - `os.checkouts` — `create`, `retrieve`
+- `os.paymentLinks` — `create`, `list`, `deactivate` (alias `del`)
 - `os.subscriptions` — `list`, `retrieve`, `create`, `pause`, `resume`, `cancel`, `changePlan`
 - `os.payments` — `list`, `retrieve`, `refund`, `refundBroadcast`
 - `os.webhookEndpoints` — `list`, `retrieve`, `create`, `update`, `delete` (alias `del`), `rotateSecret`, `test`

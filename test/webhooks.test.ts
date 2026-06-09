@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { createHmac } from "node:crypto";
 import { verifyWebhook, WebhookVerificationError } from "../src/webhooks.js";
+import {
+  WEBHOOK_EVENTS,
+  isWebhookEventType,
+  type WebhookEventType,
+} from "../src/webhook-events.js";
 
 const SECRET = "whsec_test_0123456789abcdef";
 
@@ -189,5 +194,75 @@ describe("verifyWebhook", () => {
     }
     expect(caught).toBeInstanceOf(WebhookVerificationError);
     expect(caught!.reason).toBe("missing_header");
+  });
+});
+
+describe("WEBHOOK_EVENTS", () => {
+  it("is the exact closed set of 38 event names with no duplicates", () => {
+    expect(WEBHOOK_EVENTS).toHaveLength(38);
+    expect(new Set(WEBHOOK_EVENTS).size).toBe(38);
+  });
+
+  it("matches the authoritative registry verbatim (catches drift / typos)", () => {
+    const expected = [
+      "allowance.depleted",
+      "checkout.created",
+      "checkout.expired",
+      "checkout.succeeded",
+      "customer.created",
+      "customer.deleted",
+      "customer.updated",
+      "invoice.created",
+      "invoice.paid",
+      "invoice.past_due",
+      "invoice.reminder_sent",
+      "invoice.sent",
+      "invoice.voided",
+      "payment.confirmed",
+      "payment.failed",
+      "payment.pending",
+      "payment.refunded",
+      "payment.reorg_suspected",
+      "payment.reorged",
+      "payment.reversed",
+      "product.created",
+      "product.deleted",
+      "product.updated",
+      "refund.broadcast",
+      "refund.confirmed",
+      "refund.initiated",
+      "subscription.canceled",
+      "subscription.created",
+      "subscription.past_due",
+      "subscription.paused",
+      "subscription.payment_failed",
+      "subscription.plan_changed",
+      "subscription.renewed",
+      "subscription.resumed",
+      "subscription.trial_ended",
+      "wallet.connected",
+      "wallet.removed",
+      "wallet.verified",
+    ];
+    expect([...WEBHOOK_EVENTS].sort()).toStrictEqual([...expected].sort());
+  });
+
+  it("does NOT contain the hallucinated events a prior audit invented", () => {
+    const phantom = ["payment.screened", "allowance.recorded", "webhook.endpoint.test"];
+    for (const p of phantom) {
+      expect(WEBHOOK_EVENTS as readonly string[]).not.toContain(p);
+    }
+  });
+
+  it("isWebhookEventType narrows known strings and rejects unknown ones", () => {
+    expect(isWebhookEventType("payment.confirmed")).toBe(true);
+    expect(isWebhookEventType("nope.not.real")).toBe(false);
+    const raw = "subscription.renewed";
+    if (isWebhookEventType(raw)) {
+      const narrowed: WebhookEventType = raw; // compile-time: narrowed to the union
+      expect(narrowed).toBe("subscription.renewed");
+    } else {
+      throw new Error("expected subscription.renewed to be a known event");
+    }
   });
 });
