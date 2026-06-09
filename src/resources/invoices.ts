@@ -12,6 +12,14 @@ export type ListInvoicesQuery = {
   limit?: number;
   customerId?: string;
   status?: InvoiceStatus;
+  /**
+   * Inclusive lower bound on `createdAt`. Any ISO-8601 string (e.g.
+   * `"2026-04-01"` or `"2026-04-01T00:00:00Z"`). Pairs with `to` to
+   * window a reporting period.
+   */
+  from?: string;
+  /** Inclusive upper bound on `createdAt`. ISO-8601; must be >= `from`. */
+  to?: string;
 };
 
 export class InvoicesResource {

@@ -1,7 +1,9 @@
 # @opensettle/sdk
 
-Official Node SDK for the [OpenSettle](https://opensettle.io) API. Stablecoin
-billing on Base, Ethereum, Polygon, and Arbitrum.
+Official Node SDK for the [OpenSettle](https://opensettle.io) API. Multi-chain
+stablecoin billing: USDC on Base, Ethereum, Polygon, Arbitrum, and Solana;
+USDT on Ethereum, Polygon, Arbitrum, Solana, and Tron. (Hosted checkout is
+EVM-only today — see [below](#hosted-checkout-evm-only-today).)
 
 [![npm](https://img.shields.io/npm/v/@opensettle/sdk.svg)](https://www.npmjs.com/package/@opensettle/sdk)
 ![types](https://img.shields.io/badge/types-included-blue)
@@ -131,6 +133,9 @@ try {
 | `NotFoundError` | 404 | `not_found` |
 | `ConflictError` | 409 | `conflict` |
 | `RateLimitError` | 429 | `rate_limited` (carries `retryAfter`) |
+| `RestrictedJurisdictionError` | 403 | `restricted_jurisdiction` (`metadata: { code, name, reason }`) |
+| `KybRequiredError` | 403 | `kyb_required` (`metadata.kybStatus`) |
+| `AttestationRequiredError` | 412 | `attestation_required` (`metadata: { category, requiredAge }`) |
 | `SettlementError` | 422 | `chain_reverted`, `insufficient_confirmations`, `signing_required` |
 | `StepUpRequiredError` | 401 | `aal_required` |
 | `APIError` | 5xx | `internal_error` (and unknown future codes) |
@@ -208,6 +213,46 @@ Default tolerance is 5 minutes; pass `tolerance: <seconds>` to override (or
 > sees it (Express body-parser default, etc.) destroy the original bytes —
 > you'll get spurious `signature_mismatch` errors. Configure raw-body access
 > on the webhook route only.
+
+### Event payloads
+
+`verifyWebhook<T>` returns `data` typed as your `T` — the SDK does not ship
+event-payload types, so you annotate the shape you care about. Every body is
+`{ id, type, livemode, created_at, data }`. `data` is the event-specific
+payload (there is **no** `data.object` wrapper and **no** `api_version`). See
+the full event catalog and sample bodies in the
+[webhook contracts](https://opensettle.io/docs/webhooks) reference.
+
+Two shapes worth calling out:
+
+- **`payment.confirmed`** (and the other `payment.*` ids-only events) carries
+  **ids only** — `{ paymentId, checkoutId }`. Fetch the full row with
+  `os.payments.retrieve(paymentId)` when you need amounts or on-chain fields.
+- **`subscription.renewed`** ships an **additive superset**:
+  `{ subscription, invoice, subscriptionId, nextBillingDate, metadata }`.
+  `subscription` and `invoice` are the embedded resources; `subscriptionId` and
+  `nextBillingDate` are kept as top-level convenience fields so older handlers
+  that read `data.subscriptionId` keep working.
+
+```ts
+type RenewedEvent = {
+  id: string;
+  type: "subscription.renewed";
+  created_at: string;
+  data: {
+    subscription: { id: string; status: string };
+    invoice: { id: string; status: string };
+    subscriptionId: string;       // convenience mirror of subscription.id
+    nextBillingDate: string;      // ISO-8601
+    metadata: Record<string, unknown> | null;
+  };
+};
+
+const { data } = verifyWebhook<RenewedEvent>({ rawBody, signatureHeader, secret });
+if (data.type === "subscription.renewed") {
+  extendAccess(data.data.subscriptionId, data.data.nextBillingDate);
+}
+```
 
 ## Resources
 

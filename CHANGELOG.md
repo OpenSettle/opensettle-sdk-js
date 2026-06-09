@@ -5,6 +5,62 @@ All notable changes to `@opensettle/sdk` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Backend-sync pass against the live API. All changes are additive and
+non-breaking — no `package.json` version bump (these land in the next
+published release).
+
+### Added
+
+- **`Customer.lifetimeValueMinor`.** Every customer-returning endpoint
+  (`list` / `retrieve` / `create` / `update`) serializes a live-computed
+  `lifetimeValueMinor` — `SUM(amountMinor)` over the customer's
+  confirmed+refunded payments, in minor units. The pre-existing
+  `lifetimeValue` field is a never-written cache (effectively always `0`)
+  and is documented as do-not-display; `lifetimeValueMinor` is the field
+  to use. Mirrors `apps/api/src/http/routes/customers.ts`.
+- **`AttestationRequiredError` (`attestation_required`, HTTP 412).** New
+  typed error for the high-risk-category checkout gate at
+  `POST /v1/checkout/:id/prepare-payment`. Previously an
+  `attestation_required` envelope fell through to `APIError` with its
+  code rewritten to `internal_error`, discarding the real code and the
+  `metadata.category` / `metadata.requiredAge` context. Now mapped to its
+  own subclass with `code === "attestation_required"`. Mirrors
+  `packages/shared/src/errors.ts`.
+- **`payments.list` / `invoices.list` accept `from` + `to`.** Inclusive
+  ISO-8601 `createdAt` bounds for windowing a reporting period (the same
+  bounds the API's CSV export uses).
+- **`payments.list` / `subscriptions.list` accept `expand: "customer"`.**
+  Side-loads the full customer object onto each row.
+- **`products.create` / `products.update` accept `category`.** New
+  `ProductCategory` type (`standard`, `cbd_hemp`, `vape_nicotine`, …) on
+  `CreateProductRequest` / `UpdateProductRequest`, and surfaced on the
+  `Product` response. Mirrors `ProductCategory` in
+  `packages/shared/src/schemas/product.ts`; drives the API's per-state
+  legality checks and audit-pack categorization.
+
+### Changed
+
+- **README + `package.json` description: corrected the chain coverage.**
+  Was "Stablecoin billing on Base, Ethereum, Polygon, and Arbitrum" —
+  understated the matrix. Now states the real support: USDC on
+  Base/Ethereum/Polygon/Arbitrum/Solana, USDT on
+  Ethereum/Polygon/Arbitrum/Solana/Tron. Hosted-checkout-EVM-only caveat
+  retained.
+- **README webhooks: documented the `subscription.renewed` additive
+  superset** (`{ subscription, invoice, subscriptionId, nextBillingDate,
+  metadata }`) and the `payment.*` ids-only payload shape, with a typed
+  example.
+
+### Fixed
+
+- **`webhookEndpoints.update()` now actually accepts `description: string |
+  null`.** The 0.5.1 changelog documented this, but the type still read
+  `description: string`, leaving callers no in-SDK way to clear a
+  description. The `null` branch is now in the type (the server already
+  accepted it).
+
 ## [0.5.1] — 2026-05-19
 
 ### Added

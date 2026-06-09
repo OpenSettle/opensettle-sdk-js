@@ -1,7 +1,7 @@
 {
   "name": "@opensettle/sdk",
   "version": "0.5.1",
-  "description": "Official Node SDK for the OpenSettle API. Stablecoin billing on Base, Ethereum, Polygon, and Arbitrum.",
+  "description": "Official Node SDK for the OpenSettle API. Multi-chain stablecoin billing — USDC on Base, Ethereum, Polygon, Arbitrum, and Solana; USDT on Ethereum, Polygon, Arbitrum, Solana, and Tron.",
   "license": "MIT",
   "homepage": "https://opensettle.io",
   "repository": {

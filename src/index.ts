@@ -14,6 +14,7 @@ export {
   ForbiddenError,
   RestrictedJurisdictionError,
   KybRequiredError,
+  AttestationRequiredError,
   NotFoundError,
   ConflictError,
   RateLimitError,

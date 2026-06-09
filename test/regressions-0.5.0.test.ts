@@ -25,8 +25,10 @@ import { describe, it, expect, vi } from "vitest";
 import { createHmac } from "node:crypto";
 import {
   OpenSettle,
+  OpenSettleError,
   ForbiddenError,
   RestrictedJurisdictionError,
+  AttestationRequiredError,
   WebhookSecretError,
   verifyWebhook,
 } from "../src/index.js";
@@ -363,6 +365,31 @@ describe("error mapping: restricted_jurisdiction round-trips (regression: previo
       null,
     );
     expect(err.metadata).toBeNull();
+  });
+});
+
+describe("error mapping: attestation_required round-trips (regression: previously fell through to APIError as internal_error)", () => {
+  it("envelope { error: { code: 'attestation_required', metadata } } → AttestationRequiredError with code + metadata preserved", () => {
+    const err = fromEnvelope(
+      {
+        error: {
+          code: "attestation_required",
+          message: "Attestation required before prepare-payment",
+          request_id: "req_att",
+          metadata: { category: "cbd_hemp", requiredAge: 21 },
+        },
+      },
+      412,
+      null,
+    );
+    expect(err).toBeInstanceOf(AttestationRequiredError);
+    expect(err).toBeInstanceOf(OpenSettleError);
+    // 412 is not a 403 — must NOT be a ForbiddenError.
+    expect(err).not.toBeInstanceOf(ForbiddenError);
+    expect(err.code).toBe("attestation_required");
+    expect(err.status).toBe(412);
+    expect(err.requestId).toBe("req_att");
+    expect(err.metadata).toStrictEqual({ category: "cbd_hemp", requiredAge: 21 });
   });
 });
 

@@ -34,6 +34,20 @@ export type ListPaymentsQuery = {
    * primary ops triage surface.
    */
   screeningVerdict?: ScreeningVerdict;
+  /**
+   * Inclusive lower bound on `createdAt`. Any ISO-8601 string (e.g.
+   * `"2026-04-01"` or `"2026-04-01T00:00:00Z"`). Pairs with `to` to
+   * window a reporting period.
+   */
+  from?: string;
+  /** Inclusive upper bound on `createdAt`. ISO-8601; must be >= `from`. */
+  to?: string;
+  /**
+   * Side-load related resources. `"customer"` adds a `customer` field
+   * (the full customer object, or `null`) to every payment row in the
+   * response. The only supported value today.
+   */
+  expand?: "customer";
 };
 
 export class PaymentsResource {

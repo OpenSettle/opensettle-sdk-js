@@ -11,6 +11,12 @@ export type ListSubscriptionsQuery = {
   limit?: number;
   customerId?: string;
   status?: string;
+  /**
+   * Side-load related resources. `"customer"` adds a `customer` field
+   * (the full customer object, or `null`) to every subscription row in
+   * the response. The only supported value today.
+   */
+  expand?: "customer";
 };
 
 export class SubscriptionsResource {

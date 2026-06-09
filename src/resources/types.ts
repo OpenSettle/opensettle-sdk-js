@@ -55,7 +55,20 @@ export type Customer = {
   country: string | null;
   status: CustomerStatus;
   activeSubscriptions: number;
+  /**
+   * Stored `lifetime_value` column. This is a never-written cache that is
+   * effectively always `0` — do NOT display it. Use `lifetimeValueMinor`
+   * (the live-computed value below) instead. Kept on the type because the
+   * API still serializes it on every customer row.
+   */
   lifetimeValue: number;
+  /**
+   * Settled lifetime value in MINOR units (cents), computed live by the
+   * API as SUM(amountMinor) over payments with status confirmed|refunded.
+   * Present on every customer-returning endpoint (list / retrieve / create
+   * / update). This is the field to use for LTV display.
+   */
+  lifetimeValueMinor: number;
   metadata: Record<string, unknown> | null;
   createdAt: string;
   deletedAt: string | null;
@@ -79,11 +92,29 @@ export type UpdateCustomerRequest = {
 // --- product (mirrors `product.ts`)
 export type PriceInterval = "one_time" | "week" | "month" | "year";
 
+/**
+ * Product vertical-fit category. Drives the API's per-state legality
+ * checks + audit-pack categorization. Mirrors `ProductCategory` in
+ * `packages/shared/src/schemas/product.ts`; defaults to `"standard"`.
+ */
+export type ProductCategory =
+  | "standard"
+  | "cbd_hemp"
+  | "kratom"
+  | "vape_nicotine"
+  | "firearms_mail_order"
+  | "ammunition"
+  | "adult_content"
+  | "cannabis_thc"
+  | "alcohol_direct_ship"
+  | "high_risk_saas";
+
 export type Product = {
   id: string;
   workspaceId: string;
   name: string;
   description: string | null;
+  category: ProductCategory;
   active: boolean;
   metadata: Record<string, unknown> | null;
   createdAt: string;
@@ -104,12 +135,14 @@ export type Price = {
 export type CreateProductRequest = {
   name: string;
   description?: string;
+  category?: ProductCategory;
   metadata?: Record<string, unknown>;
 };
 
 export type UpdateProductRequest = {
   name?: string;
   description?: string | null;
+  category?: ProductCategory;
   active?: boolean;
   metadata?: Record<string, unknown> | null;
 };
@@ -335,6 +368,16 @@ export type CreateCheckoutRequest = {
   customerName?: string;
   invoiceId?: string;
   priceId?: string;
+  /**
+   * Ad-hoc one-time charge amount in MINOR units (cents). `mode=payment` only —
+   * an alternative to `invoiceId` / a one-time `priceId` for a variable or
+   * one-off price with no pre-made record. Pair with `chain` + `token`.
+   */
+  amount?: number;
+  /** ISO-4217 currency for an ad-hoc `amount`. Defaults to USD. */
+  currency?: string;
+  /** Buyer-facing description for an ad-hoc `amount` checkout. */
+  description?: string;
   successUrl: string;
   cancelUrl?: string;
   /** Chain + token override. Defaults come from invoice/price at the service layer. */

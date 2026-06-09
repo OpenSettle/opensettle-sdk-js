@@ -29,6 +29,7 @@ export type ErrorCode =
   | "aal_required"
   | "restricted_jurisdiction"
   | "kyb_required"
+  | "attestation_required"
   | "network_error";
 
 export class OpenSettleError extends Error {
@@ -94,6 +95,19 @@ export class RestrictedJurisdictionError extends ForbiddenError {
  */
 export class KybRequiredError extends ForbiddenError {
   override readonly name: string = "KybRequiredError";
+}
+/**
+ * `attestation_required` — a high-risk-category checkout was refused at
+ * `POST /v1/checkout/:id/prepare-payment` because no passing attestation
+ * row exists for this (checkout, customer). HTTP 412 (Precondition
+ * Failed). The hosted-checkout UI normally collects the attestation
+ * before rendering the wallet/QR; this fires when a direct API call
+ * skips that gate. `metadata.category` names the vertical that tripped
+ * it and `metadata.requiredAge` carries the minimum age the matrix
+ * demands (or `null`). Added to the API 2026-05-20.
+ */
+export class AttestationRequiredError extends OpenSettleError {
+  override readonly name = "AttestationRequiredError";
 }
 export class NotFoundError extends OpenSettleError {
   override readonly name = "NotFoundError";
@@ -172,6 +186,8 @@ export function fromEnvelope(
       return new RestrictedJurisdictionError({ ...opts, code });
     case "kyb_required":
       return new KybRequiredError({ ...opts, code });
+    case "attestation_required":
+      return new AttestationRequiredError({ ...opts, code });
     case "not_found":
       return new NotFoundError({ ...opts, code });
     case "conflict":
