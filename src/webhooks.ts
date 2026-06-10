@@ -8,7 +8,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  *   message : `${unix_seconds}.${raw_body}`
  *   secret  : the per-endpoint signing secret returned by
  *             `POST /v1/workspaces/:ws/webhook_endpoints` (or rotated via
- *             `…/rotate_secret`)
+ *             `…/webhook_endpoints/:id/rotate`)
  *
  * The verifier is constant-time. It throws `WebhookVerificationError`
  * with a specific reason on every failure path so handlers can return a
