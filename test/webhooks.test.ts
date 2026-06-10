@@ -198,9 +198,9 @@ describe("verifyWebhook", () => {
 });
 
 describe("WEBHOOK_EVENTS", () => {
-  it("is the exact closed set of 38 event names with no duplicates", () => {
-    expect(WEBHOOK_EVENTS).toHaveLength(38);
-    expect(new Set(WEBHOOK_EVENTS).size).toBe(38);
+  it("is the exact closed set of 41 event names with no duplicates", () => {
+    expect(WEBHOOK_EVENTS).toHaveLength(41);
+    expect(new Set(WEBHOOK_EVENTS).size).toBe(41);
   });
 
   it("matches the authoritative registry verbatim (catches drift / typos)", () => {
@@ -225,8 +225,9 @@ describe("WEBHOOK_EVENTS", () => {
       "payment.reorg_suspected",
       "payment.reorged",
       "payment.reversed",
+      "price.created",
+      "price.updated",
       "product.created",
-      "product.deleted",
       "product.updated",
       "refund.broadcast",
       "refund.confirmed",
@@ -243,12 +244,17 @@ describe("WEBHOOK_EVENTS", () => {
       "wallet.connected",
       "wallet.removed",
       "wallet.verified",
+      "webhook.endpoint.created",
+      "webhook.endpoint.test",
     ];
     expect([...WEBHOOK_EVENTS].sort()).toStrictEqual([...expected].sort());
   });
 
   it("does NOT contain the hallucinated events a prior audit invented", () => {
-    const phantom = ["payment.screened", "allowance.recorded", "webhook.endpoint.test"];
+    // NOTE: webhook.endpoint.test was a phantom in a prior audit but is now a
+    // REAL emitted event (events.ts emitEvent({ type: "webhook.endpoint.test" })),
+    // so it is intentionally absent from this list.
+    const phantom = ["payment.screened", "allowance.recorded", "allowance.revoked"];
     for (const p of phantom) {
       expect(WEBHOOK_EVENTS as readonly string[]).not.toContain(p);
     }

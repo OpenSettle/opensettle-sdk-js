@@ -42,8 +42,9 @@ export const WEBHOOK_EVENTS = [
   "payment.reorg_suspected",
   "payment.reorged",
   "payment.reversed",
+  "price.created",
+  "price.updated",
   "product.created",
-  "product.deleted",
   "product.updated",
   "refund.broadcast",
   "refund.confirmed",
@@ -60,6 +61,8 @@ export const WEBHOOK_EVENTS = [
   "wallet.connected",
   "wallet.removed",
   "wallet.verified",
+  "webhook.endpoint.created",
+  "webhook.endpoint.test",
 ] as const;
 
 /** A single OpenSettle webhook event name. */
