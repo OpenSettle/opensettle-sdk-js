@@ -254,6 +254,12 @@ if (data.type === "subscription.renewed") {
 }
 ```
 
+## Recipes
+
+Runnable, compile-tested examples — hosted checkout, subscriptions, webhook
+verification, pagination, and refunds — across all four SDKs in the
+[OpenSettle Cookbook](https://github.com/OpenSettle/opensettle-cookbook).
+
 ## Resources
 
 - `os.customers` — `list`, `retrieve`, `create`, `update`, `delete` (alias `del`)
