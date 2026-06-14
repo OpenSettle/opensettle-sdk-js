@@ -83,8 +83,16 @@ export class SubscriptionsResource {
   }
 
   /**
-   * `prorationMode: "immediately"` prorates and bills now; `"at_period_end"`
-   * defers the swap. Default is `"at_period_end"`.
+   * Change a subscription's price (plan upgrade/downgrade).
+   *
+   * Only `prorationMode: "at_period_end"` (the default) is implemented: the
+   * new price simply takes effect at the next billing cycle, with no
+   * mid-cycle credit or charge. `prorationMode: "immediately"` is **not
+   * implemented** — the API rejects it with `400 invalid_request` (there is
+   * no proration billing yet) rather than silently ignoring it, so you can't
+   * be misled into thinking a mid-cycle charge fired. The `immediately`
+   * value is kept on the type for forward-compatibility for when proration
+   * billing ships.
    */
   async changePlan(
     subId: string,

@@ -6,6 +6,7 @@ import type {
   UpdateProductRequest,
   Price,
   CreatePriceRequest,
+  UpdatePriceRequest,
   CursorPage,
 } from "./types.js";
 
@@ -72,6 +73,22 @@ export class ProductsResource {
         body: input,
         idempotencyKey: opts?.idempotencyKey ?? true,
       },
+    );
+    return unwrap<Price>(resp, "price");
+  }
+
+  /**
+   * Update a price. Only `active` (archive/unarchive) and `metadata` are
+   * mutable — amount / currency / interval are immutable once a price is
+   * created. To change those, create a new price instead.
+   */
+  async updatePrice(
+    priceId: string,
+    input: UpdatePriceRequest,
+  ): Promise<Price> {
+    const resp = await this.http.request<unknown>(
+      `/prices/${encodeURIComponent(priceId)}`,
+      { method: "PATCH", body: input },
     );
     return unwrap<Price>(resp, "price");
   }

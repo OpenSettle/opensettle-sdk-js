@@ -154,6 +154,16 @@ export type CreatePriceRequest = {
   metadata?: Record<string, unknown>;
 };
 
+/**
+ * Update a price. Only `active` (archive/unarchive) and `metadata` are
+ * mutable — amount / currency / interval are immutable once created, so
+ * make a new price to change them.
+ */
+export type UpdatePriceRequest = {
+  active?: boolean;
+  metadata?: Record<string, unknown> | null;
+};
+
 // --- invoice (mirrors `invoice.ts`)
 export type InvoiceStatus = "draft" | "open" | "paid" | "past_due" | "void";
 
@@ -341,6 +351,21 @@ export type SubscriptionStatus =
 
 export type AutopayMode = "allowance" | "smart-wallet" | "manual";
 
+/**
+ * Recurring interval as the API serializes it on a subscription (the
+ * dashboard/table vocabulary). The underlying price stores the canonical
+ * `PriceInterval` (`one_time | week | month | year`, plus the `minute` /
+ * `hour` fast-test cadences); the API maps it to this view form on the
+ * subscription's `interval` field.
+ */
+export type SubscriptionInterval =
+  | "minutely"
+  | "hourly"
+  | "weekly"
+  | "monthly"
+  | "yearly"
+  | "one_time";
+
 export type Subscription = {
   id: string;
   workspaceId: string;
@@ -349,6 +374,11 @@ export type Subscription = {
   priceId: string;
   amountMinor: number;
   currency: string;
+  /**
+   * Recurring interval (resolved from the price). Present on the list and
+   * single-retrieve responses; omitted from webhook subscription payloads.
+   */
+  interval?: SubscriptionInterval;
   chain: ChainId;
   token: TokenSymbol;
   status: SubscriptionStatus;
@@ -364,6 +394,14 @@ export type Subscription = {
   pausedAt: string | null;
   mrrMinor: number;
   metadata: Record<string, unknown> | null;
+  /**
+   * Why the last autopay (`allowance`) renewal failed. Only populated on the
+   * single-retrieve response for a `past_due` subscription with
+   * `autopay: "allowance"`; `null` otherwise (including on list responses and
+   * webhook payloads). Use it to distinguish a revoked/insufficient allowance
+   * (the customer must act — retries won't recover) from a transient miss.
+   */
+  lastAutopayFailure?: { reason: string; at: string | null } | null;
   createdAt: string;
 };
 
@@ -412,7 +450,14 @@ export type CreateCheckoutRequest = {
   currency?: string;
   /** Buyer-facing description for an ad-hoc `amount` checkout. */
   description?: string;
-  successUrl: string;
+  /**
+   * Where to send the buyer after a successful payment. OPTIONAL — omit it
+   * for a shareable link with no return destination (the hosted success
+   * panel then shows "Payment received" instead of redirecting). When
+   * omitted the API stores it as `""`. Do NOT send an empty string: the API
+   * validates this as a URL and rejects `""` with `400 invalid_request`.
+   */
+  successUrl?: string;
   cancelUrl?: string;
   /** Chain + token override. Defaults come from invoice/price at the service layer. */
   chain?: ChainId;
@@ -431,7 +476,8 @@ export type Checkout = {
   workspaceId: string;
   mode: CheckoutMode;
   status: CheckoutStatus;
-  customerId: string;
+  /** `null` for a guest checkout (a `mode=payment` scan-and-pay link with no customer). */
+  customerId: string | null;
   invoiceId: string | null;
   priceId: string | null;
   amountMinor: number;
